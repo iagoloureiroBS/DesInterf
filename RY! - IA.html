@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="es" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RY! - Reserva Ya! App Accesible</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <!-- QRCode.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        ry: {
+                            50: '#ecfdf5',
+                            100: '#d1fae5',
+                            500: '#10b981',
+                            600: '#059669',
+                            700: '#047857',
+                            dark: '#064e3b',
+                            accent: '#d97706'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            background-color: #0b0f19;
+            background-image: 
+                radial-gradient(at 15% 15%, rgba(16, 185, 129, 0.15) 0px, transparent 40%),
+                radial-gradient(at 85% 85%, rgba(99, 102, 241, 0.15) 0px, transparent 40%);
+            font-family: 'Inter', sans-serif;
+        }
+
+        .phone-container {
+            width: 100%;
+            max-width: 410px;
+            height: 850px;
+            max-height: 96vh;
+            border-radius: 48px;
+            box-shadow: 
+                0 30px 60px -12px rgba(0, 0, 0, 0.7),
+                0 0 0 12px #1e293b,
+                0 0 0 14px #334155;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .phone-notch {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 130px;
+            height: 28px;
+            background-color: #1e293b;
+            border-bottom-left-radius: 18px;
+            border-bottom-right-radius: 18px;
+            z-index: 50;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 16px;
+        }
+
+        .camera-dot {
+            width: 9px;
+            height: 9px;
+            background-color: #0f172a;
+            border-radius: 50%;
+            border: 1px solid #334155;
+        }
+
+        .speaker-bar {
+            width: 40px;
+            height: 4px;
+            background-color: #334155;
+            border-radius: 2px;
+        }
+
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        .tap-effect:active {
+            transform: scale(0.96);
+            transition: transform 0.1s ease;
+        }
+
+        .fade-enter {
+            animation: slideIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-center min-h-screen p-2 sm:p-4 text-slate-900 dark:text-slate-100 select-none">
+
+    <!-- BARRA SUPERIOR DE OPCIONES UI -->
+    <div class="fixed top-4 right-4 z-50 flex items-center space-x-2">
+        <button onclick="toggleDarkMode()" class="bg-slate-800 text-amber-300 hover:bg-slate-700 font-bold text-xs px-3.5 py-2 rounded-full shadow-lg flex items-center space-x-1.5 transition-all border border-slate-700">
+            <i class="fa-solid fa-moon text-sm" id="dark-icon"></i>
+            <span class="hidden sm:inline" id="dark-text">Activar Modo Oscuro</span>
+        </button>
+    </div>
+
+    <!-- MOCKUP DEL DISPOSITIVO MÓVIL -->
+    <div id="phone-app" class="phone-container bg-slate-50 transition-colors duration-300">
+        
+        <!-- Dynamic Notch -->
+        <div class="phone-notch">
+            <div class="camera-dot"></div>
+            <div class="speaker-bar"></div>
+        </div>
+
+        <!-- Barra de Estado del Móvil (Garantizada ratio > 4.5:1) -->
+        <div class="pt-7 px-6 pb-2 flex justify-between items-center text-xs font-bold text-slate-700 dark:text-slate-300 z-20 select-none bg-white/90 dark:bg-slate-900/90 backdrop-blur-md transition-colors">
+            <span id="mobile-clock">12:12</span>
+            <div class="flex items-center space-x-2 text-[11px]">
+                <i class="fa-solid fa-signal"></i>
+                <i class="fa-solid fa-wifi"></i>
+                <i class="fa-solid fa-battery-full text-slate-800 dark:text-slate-200"></i>
+            </div>
+        </div>
+
+        <!-- ENCABEZADO PRINCIPAL FIJO DE LA APP -->
+        <header class="px-5 py-3 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between z-20 shadow-sm transition-colors">
+            <div class="flex items-center space-x-3">
+                <button id="btn-back" onclick="goBack()" class="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 flex items-center justify-center text-slate-800 dark:text-slate-100 transition-colors hidden tap-effect">
+                    <i class="fa-solid fa-arrow-left text-xs"></i>
+                </button>
+                <div class="flex items-center space-x-2">
+                    <span class="bg-ry-700 text-white font-black text-xs px-2 py-1 rounded-lg tracking-wider shadow-sm shadow-ry-700/30">RY!</span>
+                    <span class="text-xs font-extrabold tracking-tight text-slate-900 dark:text-white">Reserva Ya!</span>
+                </div>
+            </div>
+
+            <div id="step-indicator" class="text-[10px] font-extrabold text-ry-700 dark:text-emerald-300 bg-ry-100 dark:bg-emerald-950/80 px-2.5 py-1 rounded-full border border-ry-300 dark:border-emerald-800">
+                Paso 1 de 5
+            </div>
+        </header>
+
+        <!-- CONTENIDO VISTAS DINÁMICAS -->
+        <main class="flex-1 overflow-y-auto hide-scrollbar px-4 py-3 space-y-4">
+
+            <!-- PASO 1: Inicio / Selección Deporte -->
+            <section id="step-1" class="space-y-4 fade-enter">
+                <div class="bg-gradient-to-br from-ry-700 via-emerald-700 to-teal-800 rounded-3xl p-5 text-white shadow-lg shadow-ry-700/20 relative overflow-hidden">
+                    <div class="relative z-10">
+                        <span class="text-[10px] font-extrabold text-slate-900 uppercase tracking-widest bg-white/90 px-2 py-0.5 rounded-md backdrop-blur-sm">Reserva Instantánea</span>
+                        <h2 class="text-2xl font-black mt-1.5 text-white">¡Encuentra tu Pista!</h2>
+                        <p class="text-xs text-emerald-50 font-medium mt-1 max-w-[220px]">Compara instalaciones, precios y reserva en menos de 1 minuto.</p>
+                    </div>
+                    <i class="fa-solid fa-trophy absolute -right-3 -bottom-3 text-8xl text-white/10 rotate-12"></i>
+                </div>
+
+                <div>
+                    <div class="flex justify-between items-center mb-2.5">
+                        <h3 class="text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">Deporte Principal</h3>
+                        <span class="text-[11px] text-ry-700 dark:text-emerald-400 font-bold"><i class="fa-solid fa-location-crosshairs mr-1"></i>Cerca de ti</span>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2.5">
+                        <button onclick="selectSport('Fútbol')" class="p-3.5 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm hover:border-ry-600 transition-all flex flex-col items-center justify-center space-y-1.5 group tap-effect">
+                            <div class="w-11 h-11 rounded-2xl bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 flex items-center justify-center text-lg group-hover:bg-ry-700 group-hover:text-white transition-colors">
+                                <i class="fa-solid fa-futbol"></i>
+                            </div>
+                            <span class="text-xs font-extrabold text-slate-900 dark:text-slate-100">Fútbol</span>
+                            <span class="text-[10px] font-semibold text-slate-600 dark:text-slate-400">8 Pistas cerca</span>
+                        </button>
+
+                        <button onclick="selectSport('Pádel')" class="p-3.5 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm hover:border-ry-600 transition-all flex flex-col items-center justify-center space-y-1.5 group tap-effect">
+                            <div class="w-11 h-11 rounded-2xl bg-indigo-100 dark:bg-indigo-950 text-indigo-800 dark:text-indigo-300 flex items-center justify-center text-lg group-hover:bg-indigo-700 group-hover:text-white transition-colors">
+                                <i class="fa-solid fa-table-tennis-paddle-ball"></i>
+                            </div>
+                            <span class="text-xs font-extrabold text-slate-900 dark:text-slate-100">Pádel</span>
+                            <span class="text-[10px] font-semibold text-slate-600 dark:text-slate-400">14 Pistas cerca</span>
+                        </button>
+
+                        <button onclick="selectSport('Tenis')" class="p-3.5 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm hover:border-ry-600 transition-all flex flex-col items-center justify-center space-y-1.5 group tap-effect">
+                            <div class="w-11 h-11 rounded-2xl bg-amber-100 dark:bg-amber-950 text-amber-900 dark:text-amber-300 flex items-center justify-center text-lg group-hover:bg-amber-600 group-hover:text-white transition-colors">
+                                <i class="fa-solid fa-baseball"></i>
+                            </div>
+                            <span class="text-xs font-extrabold text-slate-900 dark:text-slate-100">Tenis</span>
+                            <span class="text-[10px] font-semibold text-slate-600 dark:text-slate-400">6 Pistas cerca</span>
+                        </button>
+
+                        <button onclick="selectSport('Baloncesto')" class="p-3.5 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm hover:border-ry-600 transition-all flex flex-col items-center justify-center space-y-1.5 group tap-effect">
+                            <div class="w-11 h-11 rounded-2xl bg-purple-100 dark:bg-purple-950 text-purple-900 dark:text-purple-300 flex items-center justify-center text-lg group-hover:bg-purple-700 group-hover:text-white transition-colors">
+                                <i class="fa-solid fa-basketball"></i>
+                            </div>
+                            <span class="text-xs font-extrabold text-slate-900 dark:text-slate-100">Baloncesto</span>
+                            <span class="text-[10px] font-semibold text-slate-600 dark:text-slate-400">4 Pistas cerca</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="bg-slate-200/70 dark:bg-slate-800 rounded-2xl p-3.5 flex items-center space-x-3 text-xs transition-colors border border-slate-300/50 dark:border-slate-700">
+                    <i class="fa-solid fa-shield-halved text-2xl text-ry-700 dark:text-emerald-400"></i>
+                    <div>
+                        <p class="font-bold text-slate-900 dark:text-slate-100">Reserva 100% Garantizada</p>
+                        <p class="text-[11px] font-medium text-slate-600 dark:text-slate-300">Sin comisiones ocultas y cancelación gratuita hasta 24h antes.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- PASO 2: Búsqueda y Filtros Combinados -->
+            <section id="step-2" class="space-y-3 hidden fade-enter">
+                
+                <div class="relative">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></i>
+                    <input type="text" id="court-search-input" oninput="applyFilters()" placeholder="Buscar pista por nombre o calle..." 
+                           class="w-full pl-9 pr-8 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-100 focus:outline-none focus:border-ry-600 transition-colors placeholder:text-slate-500">
+                    <button onclick="clearSearch()" id="btn-clear-search" class="hidden absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 text-xs">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+
+                <!-- Chips de filtro funcional con alto contraste -->
+                <div class="flex items-center space-x-2 overflow-x-auto hide-scrollbar pb-1 text-[11px]">
+                    <button onclick="setFilterCategory('todos', this)" class="chip-btn whitespace-nowrap px-3 py-1 bg-ry-700 text-white rounded-full font-bold shadow-sm transition-all">Todos</button>
+                    <button onclick="setFilterCategory('cubierta', this)" class="chip-btn whitespace-nowrap px-3 py-1 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 rounded-full font-semibold transition-all">Cubierta</button>
+                    <button onclick="setFilterCategory('sintetico', this)" class="chip-btn whitespace-nowrap px-3 py-1 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 rounded-full font-semibold transition-all">Césped Sintético</button>
+                    <button onclick="setFilterCategory('luz', this)" class="chip-btn whitespace-nowrap px-3 py-1 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 rounded-full font-semibold transition-all">Con Luz</button>
+                </div>
+
+                <div class="flex justify-between items-center text-xs text-slate-600 dark:text-slate-300 pt-0.5">
+                    <span id="court-list-count" class="font-bold">Mostrando 3 pistas</span>
+                    <span id="sport-tag-label" class="text-xs font-extrabold text-ry-800 dark:text-emerald-300 bg-ry-100 dark:bg-emerald-950 px-2.5 py-0.5 rounded-md border border-ry-200 dark:border-emerald-800">Fútbol</span>
+                </div>
+
+                <!-- Contenedor dinámico de Pistas -->
+                <div id="court-list-container" class="space-y-3">
+                    
+                    <!-- Pista 1 -->
+                    <div data-category="sintetico luz" data-name="pista podenco c/ podenco 14" onclick="selectCourt('Pista Podenco', 26, 'C/ Podenco, 14', '4.9')" 
+                         class="court-item bg-white dark:bg-slate-800 rounded-2xl p-3.5 border border-slate-200 dark:border-slate-700 shadow-sm hover:border-ry-600 transition-all cursor-pointer tap-effect">
+                        <div class="flex justify-between items-start mb-2">
+                            <div>
+                                <div class="flex items-center space-x-2">
+                                    <span class="bg-emerald-100 dark:bg-emerald-950 text-emerald-900 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 text-[9px] font-extrabold px-2 py-0.5 rounded-full">Popular</span>
+                                    <span class="text-[11px] font-extrabold text-amber-800 dark:text-amber-400"><i class="fa-solid fa-star mr-0.5"></i>4.9 (84)</span>
+                                </div>
+                                <h3 class="font-black text-sm text-slate-900 dark:text-white mt-1">Pista Podenco</h3>
+                                <p class="text-xs text-slate-600 dark:text-slate-300 flex items-center space-x-1 mt-0.5">
+                                    <i class="fa-solid fa-location-dot text-ry-700 dark:text-emerald-400 text-xs"></i>
+                                    <span>C/ Podenco, 14 • <strong class="text-slate-800 dark:text-slate-100">1.2 km</strong></span>
+                                </p>
+                            </div>
+                            <div class="text-right">
+                                <span class="text-lg font-black text-ry-700 dark:text-emerald-400">26€</span>
+                                <span class="text-[10px] font-semibold text-slate-500 dark:text-slate-400 block">/ hora</span>
+                            </div>
+                        </div>
+                        <div class="pt-2 border-t border-slate-200 dark:border-slate-700 flex justify-between items-center text-[11px]">
+                            <span class="text-slate-600 dark:text-slate-300 font-medium"><i class="fa-solid fa-layer-group mr-1"></i> Césped Sintético</span>
+                            <span class="text-emerald-700 dark:text-emerald-400 font-bold"><i class="fa-solid fa-circle text-[7px] mr-1"></i> Disponible hoy</span>
+                        </div>
+                    </div>
+
+                    <!-- Pista 2 -->
+                    <div data-category="cubierta" data-name="pista miraflores c/ miraflores 8" onclick="selectCourt('Pista Miraflores', 18, 'C/ Miraflores, 8', '4.7')" 
+                         class="court-item bg-white dark:bg-slate-800 rounded-2xl p-3.5 border border-slate-200 dark:border-slate-700 shadow-sm hover:border-ry-600 transition-all cursor-pointer tap-effect">
+                        <div class="flex justify-between items-start mb-2">
+                            <div>
+                                <div class="flex items-center space-x-2">
+                                    <span class="bg-blue-100 dark:bg-blue-950 text-blue-900 dark:text-blue-300 border border-blue-300 dark:border-blue-800 text-[9px] font-extrabold px-2 py-0.5 rounded-full">Económica</span>
+                                    <span class="text-[11px] font-extrabold text-amber-800 dark:text-amber-400"><i class="fa-solid fa-star mr-0.5"></i>4.7 (42)</span>
+                                </div>
+                                <h3 class="font-black text-sm text-slate-900 dark:text-white mt-1">Pista Miraflores</h3>
+                                <p class="text-xs text-slate-600 dark:text-slate-300 flex items-center space-x-1 mt-0.5">
+                                    <i class="fa-solid fa-location-dot text-ry-700 dark:text-emerald-400 text-xs"></i>
+                                    <span>C/ Miraflores, 8 • <strong class="text-slate-800 dark:text-slate-100">2.5 km</strong></span>
+                                </p>
+                            </div>
+                            <div class="text-right">
+                                <span class="text-lg font-black text-ry-700 dark:text-emerald-400">18€</span>
+                                <span class="text-[10px] font-semibold text-slate-500 dark:text-slate-400 block">/ hora</span>
+                            </div>
+                        </div>
+                        <div class="pt-2 border-t border-slate-200 dark:border-slate-700 flex justify-between items-center text-[11px]">
+                            <span class="text-slate-600 dark:text-slate-300 font-medium"><i class="fa-solid fa-house-chimney mr-1"></i> Pista Cubierta</span>
+                            <span class="text-emerald-700 dark:text-emerald-400 font-bold"><i class="fa-solid fa-circle text-[7px] mr-1"></i> Disponible hoy</span>
+                        </div>
+                    </div>
+
+                    <!-- Pista 3 -->
+                    <div data-category="luz" data-name="pista olimpia av. de la dehesa 2" onclick="selectCourt('Pista Olimpia', 30, 'Av. De la Dehesa, 2', '4.8')" 
+                         class="court-item bg-white dark:bg-slate-800 rounded-2xl p-3.5 border border-slate-200 dark:border-slate-700 shadow-sm hover:border-ry-600 transition-all cursor-pointer tap-effect">
+                        <div class="flex justify-between items-start mb-2">
+                            <div>
+                                <div class="flex items-center space-x-2">
+                                    <span class="bg-purple-100 dark:bg-purple-950 text-purple-900 dark:text-purple-300 border border-purple-300 dark:border-purple-800 text-[9px] font-extrabold px-2 py-0.5 rounded-full">Premium</span>
+                                    <span class="text-[11px] font-extrabold text-amber-800 dark:text-amber-400"><i class="fa-solid fa-star mr-0.5"></i>4.8 (110)</span>
+                                </div>
+                                <h3 class="font-black text-sm text-slate-900 dark:text-white mt-1">Pista Olimpia</h3>
+                                <p class="text-xs text-slate-600 dark:text-slate-300 flex items-center space-x-1 mt-0.5">
+                                    <i class="fa-solid fa-location-dot text-ry-700 dark:text-emerald-400 text-xs"></i>
+                                    <span>Av. De la Dehesa, 2 • <strong class="text-slate-800 dark:text-slate-100">3.8 km</strong></span>
+                                </p>
+                            </div>
+                            <div class="text-right">
+                                <span class="text-lg font-black text-ry-700 dark:text-emerald-400">30€</span>
+                                <span class="text-[10px] font-semibold text-slate-500 dark:text-slate-400 block">/ hora</span>
+                            </div>
+                        </div>
+                        <div class="pt-2 border-t border-slate-200 dark:border-slate-700 flex justify-between items-center text-[11px]">
+                            <span class="text-slate-600 dark:text-slate-300 font-medium"><i class="fa-solid fa-sun mr-1"></i> Iluminación Led</span>
+                            <span class="text-amber-800 dark:text-amber-300 font-bold"><i class="fa-solid fa-clock text-[7px] mr-1"></i> Últimas 2 horas</span>
+                        </div>
+                    </div>
+
+                    <!-- Estado Vacío -->
+                    <div id="no-results-msg" class="hidden text-center py-8 space-y-2">
+                        <i class="fa-solid fa-ban text-3xl text-slate-500"></i>
+                        <p class="text-xs text-slate-600 dark:text-slate-300 font-bold">No se encontraron pistas con esos filtros.</p>
+                        <button onclick="resetFilters()" class="text-xs text-ry-700 dark:text-emerald-400 font-extrabold underline">Limpiar filtros</button>
+                    </div>
+
+                </div>
+            </section>
+
+            <!-- PASO 3: Selección de Fecha y Horarios -->
+            <section id="step-3" class="space-y-4 hidden fade-enter">
+                <div class="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm border border-slate-200 dark:border-slate-700 transition-colors">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <h2 id="detail-court-name" class="text-base font-black text-slate-900 dark:text-white">Pista Podenco</h2>
+                            <p id="detail-court-address" class="text-xs font-medium text-slate-600 dark:text-slate-300">C/ Podenco, 14</p>
+                        </div>
+                        <span id="detail-court-price" class="text-base font-black text-ry-700 dark:text-emerald-400">26€/h</span>
+                    </div>
+
+                    <div class="mt-3 h-28 bg-slate-200 dark:bg-slate-700 rounded-xl relative overflow-hidden">
+                        <img src="https://images.unsplash.com/photo-1575361204480-aadea25e6e68?auto=format&fit=crop&q=80&w=500" 
+                             alt="Pista deportiva" class="w-full h-full object-cover">
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent"></div>
+                        <div class="absolute bottom-2 left-2 right-2 flex justify-between items-center text-[10px] text-white font-bold">
+                            <span class="bg-slate-900/80 px-2 py-0.5 rounded-md border border-slate-700"><i class="fa-solid fa-camera mr-1"></i>Fotos verificadas</span>
+                            <span id="detail-rating" class="bg-amber-600 text-white px-2 py-0.5 rounded-md font-extrabold"><i class="fa-solid fa-star mr-1"></i>4.9</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Date Strip Horizontal -->
+                <div class="bg-white dark:bg-slate-800 rounded-2xl p-3.5 shadow-sm border border-slate-200 dark:border-slate-700 transition-colors">
+                    <div class="flex justify-between items-center mb-2.5">
+                        <h3 class="text-xs font-extrabold text-slate-900 dark:text-white uppercase tracking-wider flex items-center space-x-1.5">
+                            <i class="fa-regular fa-calendar-days text-ry-700 dark:text-emerald-400"></i>
+                            <span>Selecciona Día</span>
+                        </h3>
+                        <span class="text-[11px] font-bold text-slate-600 dark:text-slate-300">Septiembre 2026</span>
+                    </div>
+
+                    <div class="flex space-x-2 overflow-x-auto hide-scrollbar py-1">
+                        <button onclick="selectDateStrip(this, 'Hoy (18 Sep)')" class="date-strip-btn flex-1 min-w-[62px] p-2 bg-ry-700 text-white rounded-xl text-center shadow-md shadow-ry-700/30 font-bold tap-effect">
+                            <span class="block text-[9px] uppercase tracking-wider opacity-90">HOY</span>
+                            <span class="block text-sm font-black">18</span>
+                            <span class="block text-[9px]">Vie</span>
+                        </button>
+                        <button onclick="selectDateStrip(this, 'Sáb 19 Sep')" class="date-strip-btn flex-1 min-w-[62px] p-2 bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-100 border border-slate-300 dark:border-slate-600 rounded-xl text-center font-bold tap-effect hover:border-ry-600">
+                            <span class="block text-[9px] uppercase tracking-wider text-slate-500 dark:text-slate-400">SÁB</span>
+                            <span class="block text-sm font-black">19</span>
+                            <span class="block text-[9px]">Sep</span>
+                        </button>
+                        <button onclick="selectDateStrip(this, 'Dom 20 Sep')" class="date-strip-btn flex-1 min-w-[62px] p-2 bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-100 border border-slate-300 dark:border-slate-600 rounded-xl text-center font-bold tap-effect hover:border-ry-600">
+                            <span class="block text-[9px] uppercase tracking-wider text-slate-500 dark:text-slate-400">DOM</span>
+                            <span class="block text-sm font-black">20</span>
+                            <span class="block text-[9px]">Sep</span>
+                        </button>
+                        <button onclick="selectDateStrip(this, 'Lun 21 Sep')" class="date-strip-btn flex-1 min-w-[62px] p-2 bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-100 border border-slate-300 dark:border-slate-600 rounded-xl text-center font-bold tap-effect hover:border-ry-600">
+                            <span class="block text-[9px] uppercase tracking-wider text-slate-500 dark:text-slate-400">LUN</span>
+                            <span class="block text-sm font-black">21</span>
+                            <span class="block text-[9px]">Sep</span>
+                        </button>
+                    </div>
+
+                    <!-- Horarios -->
+                    <div class="mt-4 pt-3 border-t border-slate-200 dark:border-slate-700">
+                        <label class="text-[11px] font-bold text-slate-700 dark:text-slate-200 block mb-2">Franjas de hora:</label>
+                        
+                        <div class="grid grid-cols-3 gap-2 text-xs">
+                            <button onclick="selectTimeSlot(this, '16:00 - 17:00')" class="time-slot-btn py-2 rounded-xl border border-slate-300 dark:border-slate-600 font-bold text-slate-800 dark:text-slate-200 hover:border-ry-600">16:00 h</button>
+                            <button onclick="selectTimeSlot(this, '17:00 - 18:00')" class="time-slot-btn py-2 rounded-xl border border-slate-300 dark:border-slate-600 font-bold text-slate-800 dark:text-slate-200 hover:border-ry-600">17:00 h</button>
+                            <button onclick="selectTimeSlot(this, '18:00 - 19:00')" class="time-slot-btn py-2 rounded-xl bg-ry-700 text-white font-extrabold shadow-sm shadow-ry-700/30">18:00 h</button>
+                            <button onclick="selectTimeSlot(this, '19:00 - 20:00')" class="time-slot-btn py-2 rounded-xl border border-slate-300 dark:border-slate-600 font-bold text-slate-800 dark:text-slate-200 hover:border-ry-600">19:00 h</button>
+                            <button onclick="selectTimeSlot(this, '20:00 - 21:00')" class="time-slot-btn py-2 rounded-xl border border-slate-300 dark:border-slate-600 font-bold text-slate-800 dark:text-slate-200 hover:border-ry-600">20:00 h</button>
+                            <button class="time-slot-btn py-2 rounded-xl border border-slate-200 dark:border-slate-800 font-bold text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-900 opacity-60 cursor-not-allowed line-through" disabled>21:00 h</button>
+                        </div>
+                    </div>
+                </div>
+
+                <button onclick="goToFormStep()" class="w-full py-3.5 bg-ry-700 hover:bg-ry-800 text-white font-extrabold text-sm rounded-2xl shadow-lg shadow-ry-700/30 tap-effect flex items-center justify-center space-x-2">
+                    <span>Continuar al Pago</span>
+                    <i class="fa-solid fa-arrow-right text-xs"></i>
+                </button>
+            </section>
+
+            <!-- PASO 4: Formulario y Método de Pago -->
+            <section id="step-4" class="space-y-4 hidden fade-enter">
+                <div class="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm border border-slate-200 dark:border-slate-700 transition-colors">
+                    <h2 class="text-base font-black text-slate-900 dark:text-white">Datos de la Reserva</h2>
+                    <p class="text-xs font-medium text-slate-600 dark:text-slate-300">Rellena los datos de la persona titular</p>
+
+                    <form id="booking-form" onsubmit="submitForm(event)" class="mt-3 space-y-3">
+                        <div>
+                            <label class="block text-xs font-extrabold text-slate-800 dark:text-slate-200 mb-1">Nombre Completo *</label>
+                            <div class="relative">
+                                <i class="fa-regular fa-user absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></i>
+                                <input type="text" id="cust-name" required placeholder="Ej. Carlos Gómez" 
+                                       class="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-700/60 border border-slate-300 dark:border-slate-600 rounded-xl text-xs text-slate-900 dark:text-white font-semibold focus:outline-none focus:border-ry-600">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-extrabold text-slate-800 dark:text-slate-200 mb-1">Teléfono Móvil *</label>
+                            <div class="relative">
+                                <i class="fa-solid fa-phone absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></i>
+                                <input type="tel" id="cust-phone" required placeholder="Ej. 612 345 678" 
+                                       class="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-700/60 border border-slate-300 dark:border-slate-600 rounded-xl text-xs text-slate-900 dark:text-white font-semibold focus:outline-none focus:border-ry-600">
+                            </div>
+                        </div>
+
+                        <!-- SELECCIÓN DE MÉTODO DE PAGO -->
+                        <div class="pt-1">
+                            <label class="block text-xs font-extrabold text-slate-800 dark:text-slate-200 mb-1.5">Elige Método de Pago</label>
+                            
+                            <div class="grid grid-cols-3 gap-2" id="payment-options-container">
+                                <div onclick="selectPaymentMethod('bizum', this)" class="payment-card cursor-pointer p-2.5 rounded-xl border-2 border-ry-600 bg-ry-100/60 dark:bg-emerald-950 text-center transition-all">
+                                    <i class="fa-brands fa-apple text-base text-slate-900 dark:text-white mb-0.5 block"></i>
+                                    <span class="text-[10px] font-extrabold text-slate-900 dark:text-slate-100 block">Bizum / Apple</span>
+                                </div>
+
+                                <div onclick="selectPaymentMethod('tarjeta', this)" class="payment-card cursor-pointer p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 text-center transition-all hover:border-ry-600">
+                                    <i class="fa-regular fa-credit-card text-base text-slate-700 dark:text-slate-300 mb-0.5 block"></i>
+                                    <span class="text-[10px] font-bold text-slate-700 dark:text-slate-300 block">Tarjeta</span>
+                                </div>
+
+                                <div onclick="selectPaymentMethod('pista', this)" class="payment-card cursor-pointer p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 text-center transition-all hover:border-ry-600">
+                                    <i class="fa-solid fa-hand-holding-dollar text-base text-slate-700 dark:text-slate-300 mb-0.5 block"></i>
+                                    <span class="text-[10px] font-bold text-slate-700 dark:text-slate-300 block">En Pista</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- CALCULADORA SPLIT PAYMENT -->
+                        <div class="p-3 bg-slate-100 dark:bg-slate-700/50 rounded-xl space-y-2 text-xs transition-colors border border-slate-200 dark:border-slate-600">
+                            <div class="flex justify-between items-center">
+                                <span class="font-extrabold text-slate-800 dark:text-slate-100 flex items-center">
+                                    <i class="fa-solid fa-users text-ry-700 dark:text-emerald-400 mr-1.5"></i> Dividir pago entre jugadores
+                                </span>
+                                <input type="checkbox" id="split-checkbox" onchange="toggleSplitPayment()" class="rounded text-ry-700 focus:ring-ry-600 h-4 w-4">
+                            </div>
+                            
+                            <div id="split-details" class="hidden pt-2 border-t border-slate-300 dark:border-slate-600 space-y-2">
+                                <div class="flex justify-between items-center text-[11px]">
+                                    <span class="text-slate-700 dark:text-slate-300 font-bold">Número de personas:</span>
+                                    <select id="split-players-count" onchange="updateSplitCalculation()" class="bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg px-2 py-0.5 text-xs font-bold text-slate-900 dark:text-white">
+                                        <option value="4">4 personas (Pádel / Tenis)</option>
+                                        <option value="10">10 personas (Fútbol 5)</option>
+                                        <option value="14" selected>14 personas (Fútbol 7)</option>
+                                    </select>
+                                </div>
+                                <div class="p-2 bg-emerald-100 dark:bg-emerald-950 rounded-lg text-emerald-950 dark:text-emerald-200 font-black text-[11px] flex justify-between border border-emerald-300 dark:border-emerald-800">
+                                    <span>Tu parte a pagar:</span>
+                                    <span id="split-amount-label">1.85 € / persona</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Resumen pedido -->
+                        <div class="bg-slate-100 dark:bg-slate-700/40 p-3 rounded-xl space-y-1 text-xs border border-slate-200 dark:border-slate-600">
+                            <div class="flex justify-between text-slate-700 dark:text-slate-300 font-medium">
+                                <span>Pista:</span>
+                                <span id="summary-court" class="font-bold text-slate-900 dark:text-slate-100">Pista Podenco</span>
+                            </div>
+                            <div class="flex justify-between text-slate-700 dark:text-slate-300 font-medium">
+                                <span>Fecha:</span>
+                                <span id="summary-date" class="font-bold text-slate-900 dark:text-slate-100">Hoy (18 Sep) - 18:00h</span>
+                            </div>
+                            <div class="flex justify-between text-slate-900 dark:text-white font-black pt-1 border-t border-slate-300 dark:border-slate-600">
+                                <span>Total a Pagar:</span>
+                                <span id="summary-price" class="text-ry-700 dark:text-emerald-400 font-black">26€</span>
+                            </div>
+                        </div>
+
+                        <button type="submit" id="btn-submit-booking" class="w-full mt-2 py-3.5 bg-ry-700 hover:bg-ry-800 text-white font-extrabold text-sm rounded-2xl shadow-lg shadow-ry-700/30 tap-effect flex justify-center items-center">
+                            <span>Confirmar Reserva</span>
+                        </button>
+                    </form>
+                </div>
+            </section>
+
+            <!-- PASO 5: Confirmación y QR -->
+            <section id="step-5" class="space-y-3 hidden fade-enter">
+                <div class="bg-white dark:bg-slate-800 rounded-3xl p-4 shadow-sm border border-slate-200 dark:border-slate-700 text-center space-y-3 transition-colors">
+                    
+                    <div class="w-11 h-11 bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 rounded-full flex items-center justify-center mx-auto text-lg shadow-inner">
+                        <i class="fa-solid fa-check"></i>
+                    </div>
+
+                    <div>
+                        <span class="text-[9px] font-black uppercase tracking-widest text-emerald-900 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-950 px-2.5 py-1 rounded-full border border-emerald-300 dark:border-emerald-800">¡Reserva Completada!</span>
+                        <h2 class="text-lg font-black text-slate-900 dark:text-white mt-1.5">¡A Jugar!</h2>
+                    </div>
+
+                    <!-- Código QR -->
+                    <div class="bg-slate-100 dark:bg-slate-900 p-3 rounded-2xl border border-slate-300 dark:border-slate-700 inline-block mx-auto">
+                        <div id="qrcode" class="flex justify-center p-2 bg-white rounded-xl"></div>
+                        <p class="text-[10px] font-mono text-slate-700 dark:text-slate-300 mt-1.5 font-bold">CÓDIGO: <span id="qr-code-text" class="font-extrabold text-slate-900 dark:text-white">RY-84920</span></p>
+                    </div>
+
+                    <!-- Botones Posreserva -->
+                    <div class="grid grid-cols-2 gap-2 text-xs pt-1">
+                        <button onclick="shareWhatsApp()" class="p-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold flex items-center justify-center space-x-1.5 tap-effect">
+                            <i class="fa-brands fa-whatsapp text-sm"></i>
+                            <span>WhatsApp</span>
+                        </button>
+                        <button onclick="addToCalendar()" class="p-2 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-900 dark:text-slate-100 rounded-xl font-bold flex items-center justify-center space-x-1.5 tap-effect">
+                            <i class="fa-regular fa-calendar-plus text-sm"></i>
+                            <span>Calendario</span>
+                        </button>
+                    </div>
+
+                    <!-- Detalles -->
+                    <div class="text-left text-[11px] bg-slate-100 dark:bg-slate-900/80 p-3 rounded-2xl space-y-1.5 border border-slate-200 dark:border-slate-700">
+                        <div class="flex justify-between">
+                            <span class="text-slate-600 dark:text-slate-400 font-medium">Titular:</span>
+                            <span id="final-name" class="font-extrabold text-slate-900 dark:text-slate-100">Carlos Gómez</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-slate-600 dark:text-slate-400 font-medium">Pago:</span>
+                            <span id="final-payment-method" class="font-extrabold text-emerald-800 dark:text-emerald-400">Bizum / Apple Pay</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-slate-600 dark:text-slate-400 font-medium">Pista:</span>
+                            <span id="final-court" class="font-extrabold text-slate-900 dark:text-slate-100">Pista Podenco</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-slate-600 dark:text-slate-400 font-medium">Fecha/Hora:</span>
+                            <span id="final-datetime" class="font-extrabold text-slate-900 dark:text-slate-100">Hoy - 18:00h</span>
+                        </div>
+                    </div>
+
+                    <button onclick="resetFlow()" class="w-full py-2.5 bg-slate-900 dark:bg-slate-700 hover:bg-slate-950 text-white font-bold text-xs rounded-xl tap-effect">
+                        Volver al Inicio
+                    </button>
+                </div>
+            </section>
+
+        </main>
+
+        <!-- Indicador táctil inferior -->
+        <div class="h-4 bg-white dark:bg-slate-900 flex justify-center items-center pb-1 transition-colors">
+            <div class="w-28 h-1 bg-slate-400 dark:bg-slate-600 rounded-full"></div>
+        </div>
+    </div>
+
+    <!-- PROGRAMACIÓN LOGICA JAVASCRIPT COMPLETA -->
+    <script>
+        const bookingState = {
+            step: 1,
+            sport: 'Fútbol',
+            courtName: 'Pista Podenco',
+            courtPriceNumeric: 26,
+            address: 'C/ Podenco, 14',
+            date: 'Hoy (18 Sep)',
+            time: '18:00 - 19:00',
+            customerName: '',
+            customerPhone: '',
+            paymentMethod: 'Bizum / Apple Pay',
+            filterCategory: 'todos',
+            isSplitPayment: false
+        };
+
+        function updateClock() {
+            const now = new Date();
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            document.getElementById('mobile-clock').textContent = `${hours}:${minutes}`;
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        function toggleDarkMode() {
+            const phoneApp = document.getElementById('phone-app');
+            const icon = document.getElementById('dark-icon');
+            const text = document.getElementById('dark-text');
+            
+            if (phoneApp.classList.contains('dark')) {
+                phoneApp.classList.remove('dark');
+                phoneApp.classList.remove('bg-slate-900');
+                phoneApp.classList.add('bg-slate-50');
+                icon.className = 'fa-solid fa-moon text-sm';
+                text.textContent = 'Activar Modo Oscuro';
+            } else {
+                phoneApp.classList.add('dark');
+                phoneApp.classList.remove('bg-slate-50');
+                phoneApp.classList.add('bg-slate-900');
+                icon.className = 'fa-solid fa-sun text-sm text-amber-300';
+                text.textContent = 'Desactivar Modo Oscuro';
+            }
+        }
+
+        function navigateToStep(targetStep) {
+            bookingState.step = targetStep;
+
+            for (let i = 1; i <= 5; i++) {
+                const stepEl = document.getElementById(`step-${i}`);
+                if (stepEl) stepEl.classList.add('hidden');
+            }
+
+            const currentEl = document.getElementById(`step-${targetStep}`);
+            if (currentEl) currentEl.classList.remove('hidden');
+
+            const backBtn = document.getElementById('btn-back');
+            if (targetStep > 1 && targetStep < 5) {
+                backBtn.classList.remove('hidden');
+            } else {
+                backBtn.classList.add('hidden');
+            }
+
+            document.getElementById('step-indicator').textContent = `Paso ${targetStep} de 5`;
+        }
+
+        function goBack() {
+            if (bookingState.step > 1) {
+                navigateToStep(bookingState.step - 1);
+            }
+        }
+
+        function selectSport(sportName) {
+            bookingState.sport = sportName;
+            document.getElementById('sport-tag-label').textContent = sportName;
+            navigateToStep(2);
+        }
+
+        function setFilterCategory(category, element) {
+            bookingState.filterCategory = category;
+
+            document.querySelectorAll('.chip-btn').forEach(chip => {
+                chip.className = "chip-btn whitespace-nowrap px-3 py-1 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 rounded-full font-semibold transition-all";
+            });
+            element.className = "chip-btn whitespace-nowrap px-3 py-1 bg-ry-700 text-white rounded-full font-bold shadow-sm transition-all";
+
+            applyFilters();
+        }
+
+        function applyFilters() {
+            const query = document.getElementById('court-search-input').value.toLowerCase().trim();
+            const clearBtn = document.getElementById('btn-clear-search');
+            const items = document.querySelectorAll('.court-item');
+            let visibleCount = 0;
+
+            if (query.length > 0) {
+                clearBtn.classList.remove('hidden');
+            } else {
+                clearBtn.classList.add('hidden');
+            }
+
+            items.forEach(item => {
+                const nameAndAddr = item.getAttribute('data-name').toLowerCase();
+                const categories = item.getAttribute('data-category').toLowerCase();
+
+                const matchesQuery = query === '' || nameAndAddr.includes(query);
+                const matchesCategory = bookingState.filterCategory === 'todos' || categories.includes(bookingState.filterCategory);
+
+                if (matchesQuery && matchesCategory) {
+                    item.style.display = 'block';
+                    visibleCount++;
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+
+            document.getElementById('court-list-count').textContent = `Mostrando ${visibleCount} pista${visibleCount !== 1 ? 's' : ''}`;
+            const noResults = document.getElementById('no-results-msg');
+            if (visibleCount === 0) {
+                noResults.classList.remove('hidden');
+            } else {
+                noResults.classList.add('hidden');
+            }
+        }
+
+        function clearSearch() {
+            document.getElementById('court-search-input').value = '';
+            applyFilters();
+        }
+
+        function resetFilters() {
+            document.getElementById('court-search-input').value = '';
+            const firstChip = document.querySelector('.chip-btn');
+            if (firstChip) setFilterCategory('todos', firstChip);
+        }
+
+        function selectCourt(courtName, priceNumeric, address, rating) {
+            bookingState.courtName = courtName;
+            bookingState.courtPriceNumeric = priceNumeric;
+            bookingState.address = address;
+
+            document.getElementById('detail-court-name').textContent = courtName;
+            document.getElementById('detail-court-price').textContent = `${priceNumeric}€/h`;
+            document.getElementById('detail-court-address').textContent = address;
+            document.getElementById('detail-rating').innerHTML = `<i class="fa-solid fa-star mr-1"></i>${rating}`;
+
+            navigateToStep(3);
+        }
+
+        function selectDateStrip(element, dateStr) {
+            document.querySelectorAll('.date-strip-btn').forEach(btn => {
+                btn.className = "date-strip-btn flex-1 min-w-[62px] p-2 bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-100 border border-slate-300 dark:border-slate-600 rounded-xl text-center font-bold tap-effect hover:border-ry-600";
+            });
+            element.className = "date-strip-btn flex-1 min-w-[62px] p-2 bg-ry-700 text-white rounded-xl text-center shadow-md shadow-ry-700/30 font-bold tap-effect";
+            bookingState.date = dateStr;
+        }
+
+        function selectTimeSlot(element, timeStr) {
+            document.querySelectorAll('.time-slot-btn').forEach(btn => {
+                if (!btn.disabled) {
+                    btn.className = "time-slot-btn py-2 rounded-xl border border-slate-300 dark:border-slate-600 font-bold text-slate-800 dark:text-slate-200 hover:border-ry-600";
+                }
+            });
+            element.className = "time-slot-btn py-2 rounded-xl bg-ry-700 text-white font-extrabold shadow-sm shadow-ry-700/30";
+            bookingState.time = timeStr;
+        }
+
+        function goToFormStep() {
+            document.getElementById('summary-court').textContent = bookingState.courtName;
+            document.getElementById('summary-date').textContent = `${bookingState.date} - ${bookingState.time}`;
+            document.getElementById('summary-price').textContent = `${bookingState.courtPriceNumeric}€`;
+            updateSplitCalculation();
+            navigateToStep(4);
+        }
+
+        function selectPaymentMethod(type, element) {
+            document.querySelectorAll('.payment-card').forEach(card => {
+                card.className = "payment-card cursor-pointer p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 text-center transition-all hover:border-ry-600";
+            });
+
+            element.className = "payment-card cursor-pointer p-2.5 rounded-xl border-2 border-ry-600 bg-ry-100/60 dark:bg-emerald-950 text-center transition-all";
+
+            if (type === 'bizum') bookingState.paymentMethod = 'Bizum / Apple Pay';
+            if (type === 'tarjeta') bookingState.paymentMethod = 'Tarjeta de Crédito';
+            if (type === 'pista') bookingState.paymentMethod = 'Pago en Pista';
+        }
+
+        function toggleSplitPayment() {
+            const checkbox = document.getElementById('split-checkbox');
+            const details = document.getElementById('split-details');
+            bookingState.isSplitPayment = checkbox.checked;
+
+            if (checkbox.checked) {
+                details.classList.remove('hidden');
+            } else {
+                details.classList.add('hidden');
+            }
+            updateSplitCalculation();
+        }
+
+        function updateSplitCalculation() {
+            const count = parseInt(document.getElementById('split-players-count').value);
+            const price = bookingState.courtPriceNumeric;
+            const perPerson = (price / count).toFixed(2);
+            document.getElementById('split-amount-label').textContent = `${perPerson} € / persona`;
+        }
+
+        function submitForm(event) {
+            event.preventDefault();
+
+            const submitBtn = document.getElementById('btn-submit-booking');
+            submitBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-2"></i> Procesando...`;
+            submitBtn.disabled = true;
+
+            setTimeout(() => {
+                const nameInput = document.getElementById('cust-name').value;
+                const phoneInput = document.getElementById('cust-phone').value;
+
+                bookingState.customerName = nameInput;
+                bookingState.customerPhone = phoneInput;
+
+                document.getElementById('final-name').textContent = nameInput;
+                document.getElementById('final-court').textContent = bookingState.courtName;
+                document.getElementById('final-payment-method').textContent = bookingState.paymentMethod;
+                document.getElementById('final-datetime').textContent = `${bookingState.date} a las ${bookingState.time}`;
+
+                const qrContainer = document.getElementById('qrcode');
+                qrContainer.innerHTML = '';
+                const randomCode = 'RY-' + Math.floor(10000 + Math.random() * 90000);
+                document.getElementById('qr-code-text').textContent = randomCode;
+
+                new QRCode(qrContainer, {
+                    text: `Reserva:${randomCode}|Cliente:${nameInput}|Pista:${bookingState.courtName}`,
+                    width: 95,
+                    height: 95,
+                    colorDark : "#0f172a",
+                    colorLight : "#ffffff",
+                    correctLevel : QRCode.CorrectLevel.H
+                });
+
+                submitBtn.innerHTML = `Confirmar Reserva`;
+                submitBtn.disabled = false;
+                navigateToStep(5);
+            }, 600);
+        }
+
+        function shareWhatsApp() {
+            const msg = `¡Hola! He reservado la ${bookingState.courtName} para ${bookingState.date} a las ${bookingState.time}. Mi pago ha sido confirmado por Reserva Ya!`;
+            window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`, '_blank');
+        }
+
+        function addToCalendar() {
+            alert('¡Evento añadido correctamente a tu calendario!');
+        }
+
+        function resetFlow() {
+            document.getElementById('booking-form').reset();
+            navigateToStep(1);
+        }
+    </script>
+</body>
+</html>

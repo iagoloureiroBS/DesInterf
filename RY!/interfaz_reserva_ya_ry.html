@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RY! - Reserva Ya! App</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- QRCode.js para generación del código en confirmación -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        ry: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            500: '#10b981',
+                            600: '#059669',
+                            700: '#047857',
+                            dark: '#064e3b',
+                            accent: '#f59e0b'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            background-color: #0f172a;
+            background-image: 
+                radial-gradient(at 10% 10%, rgba(16, 185, 129, 0.12) 0px, transparent 50%),
+                radial-gradient(at 90% 90%, rgba(59, 130, 246, 0.12) 0px, transparent 50%);
+            min-height: 100vh;
+            font-family: 'Inter', sans-serif;
+        }
+
+        /* Smartphone Mockup Frame */
+        .phone-container {
+            width: 100%;
+            max-width: 420px;
+            height: 860px;
+            max-height: 96vh;
+            background: #f8fafc;
+            border-radius: 44px;
+            box-shadow: 
+                0 25px 50px -12px rgba(0, 0, 0, 0.6),
+                0 0 0 10px #1e293b,
+                0 0 0 12px #334155;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Dynamic Notch */
+        .phone-notch {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 120px;
+            height: 26px;
+            background-color: #1e293b;
+            border-bottom-left-radius: 16px;
+            border-bottom-right-radius: 16px;
+            z-index: 50;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 14px;
+        }
+
+        .camera-dot {
+            width: 8px;
+            height: 8px;
+            background-color: #0f172a;
+            border-radius: 50%;
+            border: 1px solid #334155;
+        }
+
+        .speaker-bar {
+            width: 36px;
+            height: 4px;
+            background-color: #334155;
+            border-radius: 2px;
+        }
+
+        /* Scrollbar styling */
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        .tap-effect:active {
+            transform: scale(0.97);
+            transition: transform 0.1s ease;
+        }
+
+        .fade-enter {
+            animation: slideIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(12px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        /* Badge notas UX */
+        .feedback-badge {
+            animation: pulseGlow 2s infinite;
+        }
+        @keyframes pulseGlow {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.5); }
+            50% { box-shadow: 0 0 0 8px rgba(245, 158, 11, 0); }
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-center p-2 sm:p-4">
+
+    <!-- BOTÓN NOTAS DE DISEÑO DE LOS WIREFRAMES -->
+    <div class="fixed top-4 right-4 z-50">
+        <button onclick="toggleFeedbackNotes()" class="feedback-badge bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs px-3.5 py-2 rounded-full shadow-lg flex items-center space-x-2 transition-all">
+            <i class="fa-solid fa-note-sticky text-sm"></i>
+            <span class="hidden sm:inline">Notas UX del Boceto</span>
+            <span class="sm:hidden">Notas UX</span>
+        </button>
+    </div>
+
+    <!-- PANEL MODAL CON LAS NOTAS DE MEJORA DEL BOCETO -->
+    <div id="modal-notes" class="hidden fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl relative fade-enter">
+            <button onclick="toggleFeedbackNotes()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 text-lg">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            <div class="flex items-center space-x-2 text-amber-600 mb-3">
+                <i class="fa-solid fa-circle-check text-xl"></i>
+                <h3 class="font-bold text-lg text-slate-800">Mejoras Aplicadas del Boceto</h3>
+            </div>
+            <div class="space-y-3 text-xs text-slate-600 leading-relaxed">
+                <div class="p-3 bg-amber-50 rounded-2xl border border-amber-200">
+                    <p class="font-bold text-amber-900 mb-1">📌 Nota 1 (Calendario):</p>
+                    <p>Se rediseñó la pantalla de <strong>Info Pista</strong> con un calendario amplio e intuitivo, usando colores claros (Verde = Disponible, Rojo = Completo, Azul = Seleccionado) e integración de horas slot.</p>
+                </div>
+                <div class="p-3 bg-emerald-50 rounded-2xl border border-emerald-200">
+                    <p class="font-bold text-emerald-900 mb-1">📌 Nota 2 (Datos obligatorios):</p>
+                    <p>Se eliminó el correo electrónico obligatorio. Ahora los campos principales son <strong>Nombre y Teléfono</strong> para contacto directo/WhatsApp/SMS.</p>
+                </div>
+                <div class="p-3 bg-blue-50 rounded-2xl border border-blue-200">
+                    <p class="font-bold text-blue-900 mb-1">📌 Nota 3 (Confirmación & Instrucciones):</p>
+                    <p>Se incluye un <strong>Código QR generado</strong> e instrucciones claras de qué hacer al llegar a la pista (Traer DNI, enseñar QR en recepción, etc.).</p>
+                </div>
+                <div class="p-3 bg-purple-50 rounded-2xl border border-purple-200">
+                    <p class="font-bold text-purple-900 mb-1">📌 Nota Encabezado:</p>
+                    <p>Barra de estado superior fija con logo <strong>RY!</strong> y botón de flecha atrás para navegar libremente.</p>
+                </div>
+            </div>
+            <button onclick="toggleFeedbackNotes()" class="mt-5 w-full py-2.5 bg-slate-800 text-white rounded-xl font-semibold text-xs hover:bg-slate-900">
+                Entendido, volver a la App
+            </button>
+        </div>
+    </div>
+
+    <!-- MOCKUP DEL DISPOSITIVO MÓVIL -->
+    <div class="phone-container">
+        
+        <!-- Dynamic Island / Notch -->
+        <div class="phone-notch">
+            <div class="camera-dot"></div>
+            <div class="speaker-bar"></div>
+        </div>
+
+        <!-- Barra de Estado Móvil Superior -->
+        <div class="pt-7 px-6 pb-2 flex justify-between items-center text-xs font-semibold text-slate-500 z-20 select-none bg-slate-50/80 backdrop-blur-sm">
+            <span id="mobile-clock">12:12</span>
+            <div class="flex items-center space-x-2 text-[11px]">
+                <i class="fa-solid fa-signal"></i>
+                <i class="fa-solid fa-wifi"></i>
+                <i class="fa-solid fa-battery-full text-slate-700"></i>
+            </div>
+        </div>
+
+        <!-- ENCABEZADO FIJO DE LA APP (Logo RY! + Flecha Atrás + Breadcrumb Status) -->
+        <header class="px-5 py-3 bg-white border-b border-slate-100 flex items-center justify-between z-20 shadow-sm">
+            <div class="flex items-center space-x-3">
+                <button id="btn-back" onclick="goBack()" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-700 transition-colors hidden tap-effect">
+                    <i class="fa-solid fa-arrow-left text-xs"></i>
+                </button>
+                <div class="flex items-center space-x-1.5">
+                    <span class="bg-ry-600 text-white font-black text-sm px-2 py-0.5 rounded-lg tracking-wider shadow-sm shadow-ry-500/30">RY!</span>
+                    <span class="text-xs font-bold text-slate-800">Reserva Ya!</span>
+                </div>
+            </div>
+
+            <!-- Breadcrumb simplificado del estado (Solicitado en el dibujo) -->
+            <div id="breadcrumb-text" class="text-[11px] font-semibold text-ry-600 bg-ry-50 px-2.5 py-1 rounded-full truncate max-w-[150px]">
+                Deportes
+            </div>
+        </header>
+
+        <!-- CONTENIDO PRINCIPAL SCROLLABLE (Vistas dinámicas del flujo de 5 pasos) -->
+        <main class="flex-1 overflow-y-auto hide-scrollbar px-5 py-4">
+
+            <!-- PASO 1: Inicio / Selección Deporte -->
+            <section id="step-1" class="space-y-5 fade-enter">
+                <div class="bg-gradient-to-r from-ry-600 to-emerald-500 rounded-3xl p-5 text-white shadow-lg shadow-ry-600/20 relative overflow-hidden">
+                    <div class="relative z-10">
+                        <span class="text-xs font-medium text-emerald-100 uppercase tracking-wider">¿Listo para jugar?</span>
+                        <h2 class="text-2xl font-black mt-0.5">¡Reserva Ya!</h2>
+                        <p class="text-xs text-emerald-100 mt-1 max-w-[220px]">Elige tu deporte favorito y encuentra pistas disponibles en segundos.</p>
+                    </div>
+                    <i class="fa-solid fa-futbol absolute -right-4 -bottom-4 text-7xl text-white/10 rotate-12"></i>
+                </div>
+
+                <div>
+                    <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Selección Deporte</h3>
+                    <div class="grid grid-cols-2 gap-3">
+                        
+                        <!-- Opción Fútbol -->
+                        <button onclick="selectSport('Fútbol', 'fa-futbol')" class="p-4 bg-white rounded-2xl border border-slate-100 card-shadow hover:border-ry-500 hover:shadow-md transition-all flex flex-col items-center justify-center space-y-2 group tap-effect">
+                            <div class="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl group-hover:bg-emerald-600 group-hover:text-white transition-colors">
+                                <i class="fa-solid fa-futbol"></i>
+                            </div>
+                            <span class="text-xs font-bold text-slate-800">Fútbol</span>
+                            <span class="text-[10px] text-slate-400">8 Pistas cerca</span>
+                        </button>
+
+                        <!-- Opción Pádel -->
+                        <button onclick="selectSport('Pádel', 'fa-table-tennis-paddle-ball')" class="p-4 bg-white rounded-2xl border border-slate-100 card-shadow hover:border-ry-500 hover:shadow-md transition-all flex flex-col items-center justify-center space-y-2 group tap-effect">
+                            <div class="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-xl group-hover:bg-indigo-600 group-hover:text-white transition-colors">
+                                <i class="fa-solid fa-table-tennis-paddle-ball"></i>
+                            </div>
+                            <span class="text-xs font-bold text-slate-800">Pádel</span>
+                            <span class="text-[10px] text-slate-400">12 Pistas cerca</span>
+                        </button>
+
+                        <!-- Opción Tenis -->
+                        <button onclick="selectSport('Tenis', 'fa-baseball')" class="p-4 bg-white rounded-2xl border border-slate-100 card-shadow hover:border-ry-500 hover:shadow-md transition-all flex flex-col items-center justify-center space-y-2 group tap-effect">
+                            <div class="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center text-xl group-hover:bg-amber-600 group-hover:text-white transition-colors">
+                                <i class="fa-solid fa-baseball"></i>
+                            </div>
+                            <span class="text-xs font-bold text-slate-800">Tenis</span>
+                            <span class="text-[10px] text-slate-400">5 Pistas cerca</span>
+                        </button>
+
+                        <!-- Opción Otros -->
+                        <button onclick="selectSport('Otros', 'fa-basketball')" class="p-4 bg-white rounded-2xl border border-slate-100 card-shadow hover:border-ry-500 hover:shadow-md transition-all flex flex-col items-center justify-center space-y-2 group tap-effect">
+                            <div class="w-12 h-12 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center text-xl group-hover:bg-purple-600 group-hover:text-white transition-colors">
+                                <i class="fa-solid fa-basketball"></i>
+                            </div>
+                            <span class="text-xs font-bold text-slate-800">Otros</span>
+                            <span class="text-[10px] text-slate-400">Basket, Bádminton...</span>
+                        </button>
+
+                    </div>
+                </div>
+
+                <!-- Promoción rápida -->
+                <div class="bg-slate-100/80 rounded-2xl p-4 flex items-center space-x-3 text-xs text-slate-600">
+                    <i class="fa-solid fa-shield-cat text-2xl text-ry-600"></i>
+                    <div>
+                        <p class="font-bold text-slate-800">Reserva garantizada sin comisiones</p>
+                        <p class="text-[11px] text-slate-500">Cancela gratis hasta 24h antes del partido.</p>
+                    </div>
+                </div>
+            </section>
+
+
+            <!-- PASO 2: Selección Pista -->
+            <section id="step-2" class="space-y-4 hidden fade-enter">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h2 id="court-list-title" class="text-base font-bold text-slate-800">Pistas Fútbol</h2>
+                        <p class="text-xs text-slate-400">Mostrando pistas disponibles</p>
+                    </div>
+                    <!-- Filtros -->
+                    <button class="px-3 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-600 flex items-center space-x-1.5 shadow-sm tap-effect">
+                        <i class="fa-solid fa-sliders text-ry-600"></i>
+                        <span>Filtros</span>
+                    </button>
+                </div>
+
+                <!-- Lista de Pistas -->
+                <div class="space-y-3">
+                    
+                    <!-- Pista Podenco (Principal del wireframe) -->
+                    <div onclick="selectCourt('Pista Podenco', '26€/h', 'C/ Podenco, 14', 'Césped Artificial 7vs7')" 
+                         class="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm hover:border-ry-500 transition-all cursor-pointer tap-effect">
+                        <div class="flex justify-between items-start mb-2">
+                            <div>
+                                <span class="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-full">Popular</span>
+                                <h3 class="font-bold text-sm text-slate-800 mt-1">Pista Podenco</h3>
+                                <p class="text-xs text-slate-500 flex items-center space-x-1 mt-0.5">
+                                    <i class="fa-solid fa-location-dot text-ry-600"></i>
+                                    <span>C/ Podenco, 14</span>
+                                </p>
+                            </div>
+                            <div class="text-right">
+                                <span class="text-base font-extrabold text-ry-600">26€</span>
+                                <span class="text-[10px] text-slate-400 block">/ hora</span>
+                            </div>
+                        </div>
+                        <div class="pt-2 border-t border-slate-50 flex justify-between items-center text-[11px] text-slate-500">
+                            <span><i class="fa-solid fa-layer-group text-slate-400 mr-1"></i> Césped Artificial</span>
+                            <span class="text-emerald-600 font-semibold"><i class="fa-solid fa-circle text-[8px] mr-1"></i> Disponible hoy</span>
+                        </div>
+                    </div>
+
+                    <!-- Pista Miraflores -->
+                    <div onclick="selectCourt('Pista Miraflores', '15€/h', 'C/ Miraflores, 8', 'Pista Cubierta 5vs5')" 
+                         class="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm hover:border-ry-500 transition-all cursor-pointer tap-effect">
+                        <div class="flex justify-between items-start mb-2">
+                            <div>
+                                <span class="bg-blue-100 text-blue-800 text-[10px] font-bold px-2 py-0.5 rounded-full">Económica</span>
+                                <h3 class="font-bold text-sm text-slate-800 mt-1">Pista Miraflores</h3>
+                                <p class="text-xs text-slate-500 flex items-center space-x-1 mt-0.5">
+                                    <i class="fa-solid fa-location-dot text-ry-600"></i>
+                                    <span>C/ Miraflores, 8</span>
+                                </p>
+                            </div>
+                            <div class="text-right">
+                                <span class="text-base font-extrabold text-ry-600">15€</span>
+                                <span class="text-[10px] text-slate-400 block">/ hora</span>
+                            </div>
+                        </div>
+                        <div class="pt-2 border-t border-slate-50 flex justify-between items-center text-[11px] text-slate-500">
+                            <span><i class="fa-solid fa-house-chimney text-slate-400 mr-1"></i> Pista Cubierta</span>
+                            <span class="text-emerald-600 font-semibold"><i class="fa-solid fa-circle text-[8px] mr-1"></i> Disponible hoy</span>
+                        </div>
+                    </div>
+
+                    <!-- Pista Olímpica -->
+                    <div onclick="selectCourt('Pista Olimpia', '30€/h', 'Av. De la Dehesa, 2', 'Césped Natural')" 
+                         class="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm hover:border-ry-500 transition-all cursor-pointer tap-effect opacity-90">
+                        <div class="flex justify-between items-start mb-2">
+                            <div>
+                                <span class="bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-0.5 rounded-full">Premium</span>
+                                <h3 class="font-bold text-sm text-slate-800 mt-1">Pista Olimpia</h3>
+                                <p class="text-xs text-slate-500 flex items-center space-x-1 mt-0.5">
+                                    <i class="fa-solid fa-location-dot text-ry-600"></i>
+                                    <span>Av. De la Dehesa, 2</span>
+                                </p>
+                            </div>
+                            <div class="text-right">
+                                <span class="text-base font-extrabold text-ry-600">30€</span>
+                                <span class="text-[10px] text-slate-400 block">/ hora</span>
+                            </div>
+                        </div>
+                        <div class="pt-2 border-t border-slate-50 flex justify-between items-center text-[11px] text-slate-500">
+                            <span><i class="fa-solid fa-sun text-slate-400 mr-1"></i> Exterior iluminado</span>
+                            <span class="text-amber-600 font-semibold"><i class="fa-solid fa-clock text-[8px] mr-1"></i> Últimas horas</span>
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+
+
+            <!-- PASO 3: Info Pista (Con solución a NOTA 1: CALENDARIO AMPLIO Y CLARO) -->
+            <section id="step-3" class="space-y-4 hidden fade-enter">
+                <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-100">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <h2 id="detail-court-name" class="text-lg font-bold text-slate-800">Pista Podenco</h2>
+                            <p id="detail-court-address" class="text-xs text-slate-500">C/ Podenco, 14</p>
+                        </div>
+                        <span id="detail-court-price" class="text-lg font-black text-ry-600">26€/h</span>
+                    </div>
+
+                    <!-- Imagen ilustrativa de la pista -->
+                    <div class="mt-3 h-28 bg-slate-100 rounded-xl relative overflow-hidden flex items-center justify-center">
+                        <img src="https://images.unsplash.com/photo-1575361204480-aadea25e6e68?auto=format&fit=crop&q=80&w=500" 
+                             alt="Pista deportiva" class="w-full h-full object-cover">
+                        <div class="absolute inset-0 bg-gradient-to-t from-slate-900/60 to-transparent"></div>
+                        <span class="absolute bottom-2 left-2 text-[10px] text-white font-medium bg-black/40 backdrop-blur-md px-2 py-0.5 rounded-md">
+                            <i class="fa-solid fa-camera mr-1"></i> Foto de la instalación
+                        </span>
+                    </div>
+                </div>
+
+                <!-- MEJORA APLICADA (NOTA 1 DEL BOCETO): CALENDARIO AMPLIO CON CÓDIGO DE COLORES -->
+                <div class="bg-white rounded-2xl p-4 shadow-sm border border-amber-200 relative">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center space-x-1.5">
+                            <i class="fa-regular fa-calendar-days text-ry-600 text-sm"></i>
+                            <span>Selecciona Fecha</span>
+                        </h3>
+                        <!-- Leyenda de colores -->
+                        <div class="flex items-center space-x-2 text-[10px]">
+                            <span class="flex items-center"><span class="w-2 h-2 rounded-full bg-emerald-500 mr-1"></span>Libre</span>
+                            <span class="flex items-center"><span class="w-2 h-2 rounded-full bg-red-400 mr-1"></span>Lleno</span>
+                        </div>
+                    </div>
+
+                    <!-- Mes actual y botones de cambio -->
+                    <div class="flex justify-between items-center text-xs font-bold text-slate-700 mb-2 px-1">
+                        <button class="p-1 hover:bg-slate-100 rounded"><i class="fa-solid fa-chevron-left"></i></button>
+                        <span>Septiembre 2026</span>
+                        <button class="p-1 hover:bg-slate-100 rounded"><i class="fa-solid fa-chevron-right"></i></button>
+                    </div>
+
+                    <!-- Cuadrícula del Calendario Grande -->
+                    <div class="grid grid-cols-7 gap-1 text-center text-xs">
+                        <span class="text-[10px] font-bold text-slate-400">L</span>
+                        <span class="text-[10px] font-bold text-slate-400">M</span>
+                        <span class="text-[10px] font-bold text-slate-400">X</span>
+                        <span class="text-[10px] font-bold text-slate-400">J</span>
+                        <span class="text-[10px] font-bold text-slate-400">V</span>
+                        <span class="text-[10px] font-bold text-slate-400">S</span>
+                        <span class="text-[10px] font-bold text-slate-400">D</span>
+
+                        <!-- Días previos gris -->
+                        <span class="py-2 text-slate-300">28</span>
+                        <span class="py-2 text-slate-300">29</span>
+                        <span class="py-2 text-slate-300">30</span>
+                        <span class="py-2 text-slate-300">31</span>
+
+                        <!-- Días del mes con disponibilidad visual -->
+                        <button onclick="selectDate(this, '01/09/2026')" class="py-2 bg-emerald-50 text-emerald-800 rounded-lg font-semibold hover:bg-emerald-100">1</button>
+                        <button onclick="selectDate(this, '02/09/2026')" class="py-2 bg-emerald-50 text-emerald-800 rounded-lg font-semibold hover:bg-emerald-100">2</button>
+                        <button class="py-2 bg-red-50 text-red-300 rounded-lg cursor-not-allowed line-through" disabled>3</button>
+                        
+                        <button onclick="selectDate(this, '04/09/2026')" class="py-2 bg-emerald-50 text-emerald-800 rounded-lg font-semibold hover:bg-emerald-100">4</button>
+                        <button onclick="selectDate(this, '05/09/2026')" class="py-2 bg-emerald-50 text-emerald-800 rounded-lg font-semibold hover:bg-emerald-100">5</button>
+                        <button onclick="selectDate(this, '06/09/2026')" class="py-2 bg-emerald-50 text-emerald-800 rounded-lg font-semibold hover:bg-emerald-100">6</button>
+                        <button onclick="selectDate(this, '07/09/2026')" class="py-2 bg-emerald-50 text-emerald-800 rounded-lg font-semibold hover:bg-emerald-100">7</button>
+                        <button class="py-2 bg-red-50 text-red-300 rounded-lg cursor-not-allowed line-through" disabled>8</button>
+                        <button onclick="selectDate(this, '09/09/2026')" class="py-2 bg-emerald-50 text-emerald-800 rounded-lg font-semibold hover:bg-emerald-100">9</button>
+                        <button onclick="selectDate(this, '10/09/2026')" class="py-2 bg-emerald-50 text-emerald-800 rounded-lg font-semibold hover:bg-emerald-100">10</button>
+
+                        <button onclick="selectDate(this, '18/09/2026')" class="py-2 bg-ry-600 text-white rounded-lg font-bold shadow-md shadow-ry-600/30 ring-2 ring-ry-500">18</button>
+                        <button onclick="selectDate(this, '19/09/2026')" class="py-2 bg-emerald-50 text-emerald-800 rounded-lg font-semibold hover:bg-emerald-100">19</button>
+                        <button onclick="selectDate(this, '20/09/2026')" class="py-2 bg-emerald-50 text-emerald-800 rounded-lg font-semibold hover:bg-emerald-100">20</button>
+                        <button class="py-2 bg-red-50 text-red-300 rounded-lg cursor-not-allowed line-through" disabled>21</button>
+                        <button onclick="selectDate(this, '22/09/2026')" class="py-2 bg-emerald-50 text-emerald-800 rounded-lg font-semibold hover:bg-emerald-100">22</button>
+                        <button onclick="selectDate(this, '23/09/2026')" class="py-2 bg-emerald-50 text-emerald-800 rounded-lg font-semibold hover:bg-emerald-100">23</button>
+                        <button onclick="selectDate(this, '24/09/2026')" class="py-2 bg-emerald-50 text-emerald-800 rounded-lg font-semibold hover:bg-emerald-100">24</button>
+                    </div>
+
+                    <!-- Horas disponibles para el día seleccionado -->
+                    <div class="mt-4 pt-3 border-t border-slate-100">
+                        <label class="text-[11px] font-bold text-slate-600 block mb-2">Horarios disponibles hoy:</label>
+                        <div class="grid grid-cols-3 gap-2 text-xs">
+                            <button onclick="selectTime(this, '17:00 - 18:00')" class="time-slot-btn py-2 rounded-xl border border-slate-200 font-semibold text-slate-700 hover:border-ry-500 active">17:00 h</button>
+                            <button onclick="selectTime(this, '18:00 - 19:00')" class="time-slot-btn py-2 rounded-xl bg-ry-600 text-white font-bold shadow-sm">18:00 h</button>
+                            <button onclick="selectTime(this, '19:00 - 20:00')" class="time-slot-btn py-2 rounded-xl border border-slate-200 font-semibold text-slate-700 hover:border-ry-500">19:00 h</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Ubicación simulada mapa -->
+                <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-100">
+                    <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider mb-2">Ubicación mapa</h3>
+                    <div class="h-20 bg-emerald-50 rounded-xl flex items-center justify-center border border-emerald-100 relative overflow-hidden">
+                        <!-- Red del mapa simulada -->
+                        <div class="absolute inset-0 opacity-20 bg-[radial-gradient(#10b981_1px,transparent_1px)] [background-size:12px_12px]"></div>
+                        <div class="flex items-center space-x-2 text-ry-700 font-bold text-xs z-10 bg-white/90 px-3 py-1.5 rounded-full shadow-sm">
+                            <i class="fa-solid fa-location-dot text-red-500 animate-bounce"></i>
+                            <span id="map-location-label">C/ Podenco, 14</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Botón Acción Reservar Ya -->
+                <button onclick="goToFormStep()" class="w-full py-3.5 bg-ry-600 hover:bg-ry-700 text-white font-bold text-sm rounded-2xl shadow-lg shadow-ry-600/30 tap-effect flex items-center justify-center space-x-2">
+                    <span>Continuar con la Reserva</span>
+                    <i class="fa-solid fa-arrow-right text-xs"></i>
+                </button>
+            </section>
+
+
+            <!-- PASO 4: Formulario Datos Cliente (Con solución a NOTA 2: NOMBRE Y TELÉFONO) -->
+            <section id="step-4" class="space-y-4 hidden fade-enter">
+                <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-100">
+                    <h2 class="text-base font-bold text-slate-800">Datos del Reservante</h2>
+                    <p class="text-xs text-slate-400">Rellena tus datos para confirmar tu pista</p>
+
+                    <form id="booking-form" onsubmit="submitForm(event)" class="mt-4 space-y-3">
+                        
+                        <!-- NOTA 2 APLICADA: CAMPO NOMBRE OBLIGATORIO -->
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">
+                                Nombre y Apellidos <span class="text-red-500">*</span>
+                            </label>
+                            <div class="relative">
+                                <i class="fa-regular fa-user absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                                <input type="text" id="cust-name" required placeholder="Ej. Carlos Gómez" 
+                                       class="w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:border-ry-500 focus:bg-white transition-all">
+                            </div>
+                        </div>
+
+                        <!-- NOTA 2 APLICADA: TELÉFONO OBLIGATORIO PARA WHATSAPP / NOTIFICACIONES -->
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">
+                                Teléfono Móvil <span class="text-red-500">*</span>
+                            </label>
+                            <div class="relative">
+                                <i class="fa-solid fa-phone absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                                <input type="tel" id="cust-phone" required placeholder="Ej. 612 345 678" 
+                                       class="w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:border-ry-500 focus:bg-white transition-all">
+                            </div>
+                            <span class="text-[10px] text-emerald-600 mt-1 flex items-center">
+                                <i class="fa-brands fa-whatsapp mr-1"></i> Te enviaremos confirmación por WhatsApp / SMS
+                            </span>
+                        </div>
+
+                        <!-- EMAIL OPCIONAL (Nota 2) -->
+                        <div>
+                            <label class="block text-xs font-medium text-slate-500 mb-1">
+                                Correo Electrónico <span class="text-slate-400 font-normal">(Opcional)</span>
+                            </label>
+                            <div class="relative">
+                                <i class="fa-regular fa-envelope absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                                <input type="email" id="cust-email" placeholder="ejemplo@email.com" 
+                                       class="w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:border-ry-500 focus:bg-white transition-all">
+                            </div>
+                        </div>
+
+                        <!-- Forma de pago simplificada -->
+                        <div class="pt-2">
+                            <label class="block text-xs font-bold text-slate-700 mb-1">Método de pago</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                <label class="flex items-center space-x-2 p-2.5 rounded-xl border border-ry-500 bg-ry-50/50 cursor-pointer text-xs font-medium text-slate-800">
+                                    <input type="radio" name="payment" checked class="text-ry-600 focus:ring-ry-500">
+                                    <span>Pagar en Pista</span>
+                                </label>
+                                <label class="flex items-center space-x-2 p-2.5 rounded-xl border border-slate-200 cursor-pointer text-xs font-medium text-slate-600">
+                                    <input type="radio" name="payment" class="text-ry-600 focus:ring-ry-500">
+                                    <span>Tarjeta Bizum</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Resumen pedido -->
+                        <div class="bg-slate-50 p-3 rounded-xl space-y-1 text-xs border border-slate-100 mt-2">
+                            <div class="flex justify-between text-slate-500">
+                                <span>Pista:</span>
+                                <span id="summary-court" class="font-bold text-slate-700">Pista Podenco</span>
+                            </div>
+                            <div class="flex justify-between text-slate-500">
+                                <span>Fecha y Hora:</span>
+                                <span id="summary-date" class="font-bold text-slate-700">18/09/2026 - 18:00h</span>
+                            </div>
+                            <div class="flex justify-between text-slate-800 font-extrabold pt-1 border-t border-slate-200">
+                                <span>Total:</span>
+                                <span id="summary-price" class="text-ry-600">26€</span>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="w-full mt-3 py-3.5 bg-ry-600 hover:bg-ry-700 text-white font-bold text-sm rounded-2xl shadow-lg shadow-ry-600/30 tap-effect">
+                            Confirmar Reserva
+                        </button>
+                    </form>
+                </div>
+            </section>
+
+
+            <!-- PASO 5: Confirmación & QR (Con solución a NOTA 3: CÓDIGO QR Y EXPLICACIÓN) -->
+            <section id="step-5" class="space-y-4 hidden fade-enter">
+                <div class="bg-white rounded-3xl p-5 shadow-sm border border-slate-100 text-center space-y-4">
+                    
+                    <div class="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto text-xl shadow-inner">
+                        <i class="fa-solid fa-check"></i>
+                    </div>
+
+                    <div>
+                        <span class="text-[10px] font-bold uppercase tracking-widest text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full">¡Reserva Completada!</span>
+                        <h2 class="text-xl font-black text-slate-800 mt-2">¡Todo listo para jugar!</h2>
+                        <p class="text-xs text-slate-400">Tu pista ha sido reservada correctamente</p>
+                    </div>
+
+                    <!-- NOTA 3 APLICADA: CÓDIGO QR GENERADO -->
+                    <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200/80 inline-block mx-auto">
+                        <div id="qrcode" class="flex justify-center p-2 bg-white rounded-xl shadow-sm"></div>
+                        <p class="text-[10px] font-mono text-slate-500 mt-2">CÓDIGO: <span id="qr-code-text" class="font-bold text-slate-700">RY-84920</span></p>
+                    </div>
+
+                    <!-- DETALLES DE LA RESERVA -->
+                    <div class="text-left text-xs bg-slate-50 p-3.5 rounded-2xl space-y-2 border border-slate-100">
+                        <div class="flex justify-between">
+                            <span class="text-slate-400">Titular:</span>
+                            <span id="final-name" class="font-bold text-slate-800">Carlos Gómez</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-slate-400">Teléfono:</span>
+                            <span id="final-phone" class="font-bold text-slate-800">612 345 678</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-slate-400">Pista:</span>
+                            <span id="final-court" class="font-bold text-slate-800">Pista Podenco</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-slate-400">Fecha y Hora:</span>
+                            <span id="final-datetime" class="font-bold text-emerald-600">18/09/2026 - 18:00h</span>
+                        </div>
+                    </div>
+
+                    <!-- NOTA 3 APLICADA: SECCIÓN "¿QUÉ HAGO AHORA?" INSTRUCCIONES CLARAS -->
+                    <div class="text-left bg-amber-50/80 rounded-2xl p-3.5 border border-amber-200 space-y-2">
+                        <h4 class="text-xs font-bold text-amber-900 flex items-center space-x-1.5">
+                            <i class="fa-solid fa-circle-info text-amber-600"></i>
+                            <span>¿Qué hago ahora al llegar?</span>
+                        </h4>
+                        <ul class="text-[11px] text-amber-800 space-y-1 pl-1">
+                            <li class="flex items-start space-x-1.5">
+                                <span>1.</span>
+                                <span>Acude a la instalación <strong>10 minutos antes</strong> de tu hora.</span>
+                            </li>
+                            <li class="flex items-start space-x-1.5">
+                                <span>2.</span>
+                                <span>Muestra tu <strong>DNI</strong> y el <strong>código QR</strong> arriba en recepción para abrir el acceso a la pista.</span>
+                            </li>
+                            <li class="flex items-start space-x-1.5">
+                                <span>3.</span>
+                                <span>¡A disfrutar del partido!</span>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <!-- Botón para volver al inicio -->
+                    <button onclick="resetFlow()" class="w-full py-3 bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs rounded-2xl tap-effect">
+                        Volver al Inicio / Hacer otra reserva
+                    </button>
+                </div>
+            </section>
+
+        </main>
+
+        <!-- Indicador táctil inferior del teléfono -->
+        <div class="h-4 bg-white flex justify-center items-center pb-1">
+            <div class="w-32 h-1 bg-slate-300 rounded-full"></div>
+        </div>
+    </div>
+
+    <!-- LOGICA JAVASCRIPT DEL FLUJO DE RESERVA Y ESTADO -->
+    <script>
+        // Estado global de la reserva
+        const bookingState = {
+            step: 1,
+            sport: 'Fútbol',
+            courtName: 'Pista Podenco',
+            courtPrice: '26€/h',
+            address: 'C/ Podenco, 14',
+            date: '18/09/2026',
+            time: '18:00 - 19:00',
+            customerName: '',
+            customerPhone: ''
+        };
+
+        // Relación de títulos de breadcrumb para el encabezado
+        const stepBreadcrumbs = {
+            1: 'Deportes',
+            2: 'Pistas',
+            3: 'Info Pista',
+            4: 'Datos Cliente',
+            5: 'Confirmación'
+        };
+
+        // Reloj teléfono
+        function updateClock() {
+            const now = new Date();
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            document.getElementById('mobile-clock').textContent = `${hours}:${minutes}`;
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // Control del Modal de Notas UX
+        function toggleFeedbackNotes() {
+            const modal = document.getElementById('modal-notes');
+            modal.classList.toggle('hidden');
+        }
+
+        // Navegación de vistas
+        function navigateToStep(targetStep) {
+            bookingState.step = targetStep;
+
+            // Ocultar todas las secciones
+            for (let i = 1; i <= 5; i++) {
+                const stepEl = document.getElementById(`step-${i}`);
+                if (stepEl) stepEl.classList.add('hidden');
+            }
+
+            // Mostrar el paso actual
+            const currentEl = document.getElementById(`step-${targetStep}`);
+            if (currentEl) currentEl.classList.remove('hidden');
+
+            // Actualizar flecha atrás
+            const backBtn = document.getElementById('btn-back');
+            if (targetStep > 1 && targetStep < 5) {
+                backBtn.classList.remove('hidden');
+            } else {
+                backBtn.classList.add('hidden');
+            }
+
+            // Actualizar Breadcrumb
+            const breadcrumbEl = document.getElementById('breadcrumb-text');
+            if (breadcrumbEl) {
+                if (targetStep === 2) {
+                    breadcrumbEl.textContent = `Deportes > ${bookingState.sport}`;
+                } else if (targetStep === 3) {
+                    breadcrumbEl.textContent = `${bookingState.sport} > ${bookingState.courtName.replace('Pista ', '')}`;
+                } else {
+                    breadcrumbEl.textContent = stepBreadcrumbs[targetStep];
+                }
+            }
+        }
+
+        function goBack() {
+            if (bookingState.step > 1) {
+                navigateToStep(bookingState.step - 1);
+            }
+        }
+
+        // Paso 1 -> Selección de Deporte
+        function selectSport(sportName, iconClass) {
+            bookingState.sport = sportName;
+            document.getElementById('court-list-title').textContent = `Pistas de ${sportName}`;
+            navigateToStep(2);
+        }
+
+        // Paso 2 -> Selección de Pista
+        function selectCourt(courtName, price, address, features) {
+            bookingState.courtName = courtName;
+            bookingState.courtPrice = price;
+            bookingState.address = address;
+
+            document.getElementById('detail-court-name').textContent = courtName;
+            document.getElementById('detail-court-price').textContent = price;
+            document.getElementById('detail-court-address').textContent = address;
+            document.getElementById('map-location-label').textContent = address;
+
+            navigateToStep(3);
+        }
+
+        // Selección de Fecha en el Calendario
+        function selectDate(element, dateStr) {
+            // Limpiar selección previa
+            document.querySelectorAll('#step-3 button').forEach(btn => {
+                if (btn.classList.contains('bg-ry-600')) {
+                    btn.classList.remove('bg-ry-600', 'text-white', 'shadow-md', 'shadow-ry-600/30', 'ring-2', 'ring-ry-500');
+                    btn.classList.add('bg-emerald-50', 'text-emerald-800');
+                }
+            });
+
+            element.classList.remove('bg-emerald-50', 'text-emerald-800');
+            element.classList.add('bg-ry-600', 'text-white', 'shadow-md', 'shadow-ry-600/30', 'ring-2', 'ring-ry-500');
+            bookingState.date = dateStr;
+        }
+
+        // Selección de Hora
+        function selectTime(element, timeStr) {
+            document.querySelectorAll('.time-slot-btn').forEach(btn => {
+                btn.className = "time-slot-btn py-2 rounded-xl border border-slate-200 font-semibold text-slate-700 hover:border-ry-500";
+            });
+            element.className = "time-slot-btn py-2 rounded-xl bg-ry-600 text-white font-bold shadow-sm";
+            bookingState.time = timeStr;
+        }
+
+        // Paso 3 -> Ir a Formulario
+        function goToFormStep() {
+            document.getElementById('summary-court').textContent = bookingState.courtName;
+            document.getElementById('summary-date').textContent = `${bookingState.date} - ${bookingState.time}`;
+            document.getElementById('summary-price').textContent = bookingState.courtPrice;
+            navigateToStep(4);
+        }
+
+        // Paso 4 -> Enviar Formulario de Reserva
+        function submitForm(event) {
+            event.preventDefault();
+            const nameInput = document.getElementById('cust-name').value;
+            const phoneInput = document.getElementById('cust-phone').value;
+
+            bookingState.customerName = nameInput;
+            bookingState.customerPhone = phoneInput;
+
+            // Rellenar pantalla final de confirmación
+            document.getElementById('final-name').textContent = nameInput;
+            document.getElementById('final-phone').textContent = phoneInput;
+            document.getElementById('final-court').textContent = bookingState.courtName;
+            document.getElementById('final-datetime').textContent = `${bookingState.date} a las ${bookingState.time}`;
+
+            // Generar código QR dinámico
+            const qrContainer = document.getElementById('qrcode');
+            qrContainer.innerHTML = '';
+            const randomCode = 'RY-' + Math.floor(10000 + Math.random() * 90000);
+            document.getElementById('qr-code-text').textContent = randomCode;
+
+            new QRCode(qrContainer, {
+                text: `Reserva:${randomCode}|Cliente:${nameInput}|Pista:${bookingState.courtName}`,
+                width: 110,
+                height: 110,
+                colorDark : "#0f172a",
+                colorLight : "#ffffff",
+                correctLevel : QRCode.CorrectLevel.H
+            });
+
+            navigateToStep(5);
+        }
+
+        // Reiniciar flujo
+        function resetFlow() {
+            document.getElementById('booking-form').reset();
+            navigateToStep(1);
+        }
+    </script>
+</body>
+</html>

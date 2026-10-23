@@ -166,16 +166,15 @@ export default function Gallery() {
 
 
 export default function Pista() {
-  const selectCourt = (name, price, address, rating) => {
-    // Función de exemplo para xestionar o click
-    console.log(`Seleccionado: ${name}`);
+  const seleccionarPista = (nome, precio, direccion, puntuacion) => {
+    console.log(`Seleccionado: ${nome}`);
   };
 
   return (
     <div
       data-category="sintetico luz"
       data-name="pista podenco c/ podenco 14"
-      onClick={() => selectCourt('Pista Podenco', 26, 'C/ Podenco, 14', '4.9')}
+      onClick={() => seleccionarPista('Pista Podenco', 26, 'C/ Podenco, 14', '4.9')}
       className="court-item bg-white dark:bg-slate-800 rounded-2xl p-3.5 border border-slate-200 dark:border-slate-700 shadow-sm hover:border-ry-600 transition-all cursor-pointer tap-effect"
     >
       <div className="flex justify-between items-start mb-2">

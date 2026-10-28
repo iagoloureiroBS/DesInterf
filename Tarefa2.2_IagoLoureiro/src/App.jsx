@@ -1,4 +1,3 @@
-
 import Pista from './Pista';
 
 export default function App() {
@@ -39,112 +38,30 @@ export default function App() {
       disponibilidad: "Últimas 2 horas",
       disponible: false
     }
-  ]
+  ];
 
   return (
-    <div id="court-list-container" className="space-y-3">
-      <h1 className="font-bold">Mostrando 3 pistas</h1>
-      {pistas.map((pista) => (<Pista key={pista.id} pista={pista} />))}
-    </div>
-  );
-}
+    <div className="bg-slate-50 dark:bg-slate-900 min-h-screen p-4 font-sans">
 
+      <div className="max-w-md mx-auto space-y-3">
 
-function Item({ name, isPacked }) {
-  if(isPacked){
-  return (
-    <li className="item">
-      {name} {isPacked ? '✅' : 'X'}
-    </li>
-    );
-  }
-}
+        <div className="flex justify-between items-center text-xs text-slate-600 dark:text-slate-300 pt-0.5">
+          <span className="font-bold">
+            Mostrando {pistas.length} pistas
+          </span>
 
-export default function PackingList() {
-  return (
-    <section>
-      <h1>Lista de equipaje de Sally Ride</h1>
-      <ul>
-        <Item 
-          isPacked={true} 
-          name="Traje de vuelo" 
-        />
-        <Item 
-          isPacked={true} 
-          name="Casco con dorado a la hoja" 
-        />
-        <Item 
-          isPacked={false} 
-          name="Fotografía de Tam" 
-        />
-      </ul>
-    </section>
-  );
-}
+          <span className="text-xs font-extrabold text-ry-800 dark:text-emerald-300 bg-ry-100 dark:bg-emerald-950 px-2.5 py-0.5 rounded-md border border-ry-200 dark:border-emerald-800">
+            Fútbol
+          </span>
+        </div>
 
-function Item({ name, importance }) {
-  return (
-    <li className="item">
-      {importance > 0 ? <i>name</i> : name}
-    </li>
-  );
-}
+        <div id="court-list-container" className="space-y-3">
+          {pistas.map((pista) => (
+            <Pista key={pista.id} pista={pista} />
+          ))}
+        </div>
 
-export default function PackingList() {
-  return (
-    <section>
-      <h1>Lista de equipaje de Sally Ride</h1>
-      <ul>
-        <Item 
-          importance={9} 
-          name="Traje de vuelo" 
-        />
-        <Item 
-          importance={0} 
-          name="Casco con dorado a la hoja" 
-        />
-        <Item 
-          importance={6} 
-          name="Fotografía de Tam" 
-        />
-      </ul>
-    </section>
-  );
-}
-
-
-const bebidas={
-  té:{
-    parte: 'hoja',
-    cafeina: '1000'
-  }
-}
-function Drink({ name }) {
-  let part, caffeine, age
-  if(name === 'té'){
-    part = 'hoja'
-    caffeine = 'grano'
-  } else i
-  return (
-    <section>
-      <h1>{name}</h1>
-      <dl>
-        <dt>Parte de la planta</dt>
-        <dd>{name === 'té' ? 'hoja' : 'grano'}</dd>
-        <dt>Contenido de cafeína</dt>
-        <dd>{name === 'té' ? '15–70 mg/taza' : '80–185 mg/taza'}</dd>
-        <dt>Antigüedad</dt>
-        <dd>{name === 'té' ? '4,000+ años' : '1,000+ años'}</dd>
-      </dl>
-    </section>
-  );
-}
-
-export default function DrinkList() {
-  return (
-    <div>
-      <Drink name="té" />
-      <Drink name="café" />
+      </div>
     </div>
   );
 }

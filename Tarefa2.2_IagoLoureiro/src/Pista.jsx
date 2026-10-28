@@ -50,7 +50,7 @@ export default function Pista({ pista }) {
           <i className={`fa-solid ${iconosTipo[pista.tipo]} mr-1`} /> {pista.tipo}
         </span>
         <span className={`${pista.disponible ? "text-emerald-700 dark:text-emerald-400" : "text-amber-800 dark:text-amber-300"} font-bold`}>
-          <i className={`fa-solid ${pista.disponible ? "fa-circle" : "fa-clock"} text-[7px] mr-1`} /> {pista.disponibilidad} {pista.disponible ? "✅" : "❌"}
+          <i className={`fa-solid ${pista.disponible} text-[7px] mr-1`} /> {pista.disponibilidad}
         </span>
       </div>
     </div>

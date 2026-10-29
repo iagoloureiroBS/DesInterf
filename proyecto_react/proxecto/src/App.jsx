@@ -236,7 +236,7 @@ export default function App() {
     </>
   );
 }
-
+*/
 const linguaxes = [
   { id: 0, nome: "JavaScript", tipo: "interpretada", ano: 1995 },
   { id: 1, nome: "Java", tipo: "compilada", ano: 1995 },
@@ -246,21 +246,29 @@ const linguaxes = [
   { id: 5, nome: "Go", tipo: "compilada", ano: 2009 },
 ];
 
-export default function App() {
-  const elementos = linguaxes.filter(tipo => tipo === "interpretada").map((linguaxe) => (
+
+function filtrado(filtro){
+  const elementos = linguaxes.filter(tipo => tipo === filtro).map((linguaxe) => (
     <li key={linguaxe.id}>
       <b>{linguaxe.nome}</b> ({linguaxe.tipo}, {linguaxe.ano})
     </li>
-  ));
+  ))
+  return elementos
+}
+
+
+export default function App() {
 
   return (
     <article>
       <h1>Linguaxes de programación</h1>
-      <ul>{elementos}</ul>
+      <ul>{filtrado("interpretada")}</ul>
+      <h1>Linguaxes outras</h1>
+      <ul>{filtrado("compilada")}</ul>
     </article>
   );
 }
-*/
+
 // RETO 2 · Listas aniñadas nun só compoñente
 //
 // Cada playlist ten un array de cancións, pero agora só se mostra o seu nome.
@@ -302,3 +310,4 @@ export default function App() {
     </article>
   );
 }
+  

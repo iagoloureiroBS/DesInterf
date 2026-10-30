@@ -1,6 +1,9 @@
 import Pista from './Pista';
 
+import Navbar from "./Navbar";
+
 export default function App() {
+  
   const pistas = [
     {
       id: 1,
@@ -41,8 +44,9 @@ export default function App() {
   ];
 
   return (
+    
     <div className="bg-slate-50 dark:bg-slate-900 min-h-screen p-4 font-sans">
-
+      <Navbar />
       <div className="max-w-md mx-auto space-y-3">
 
         <div className="flex justify-between items-center text-xs text-slate-600 dark:text-slate-300 pt-0.5">

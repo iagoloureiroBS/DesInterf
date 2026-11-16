@@ -1,7 +1,7 @@
 
 import { useState } from 'react';
 
-// Lista de productos
+
 const PRODUCTOS = [
   'Teclado mecánico',
   'Rato sen fíos',
@@ -11,7 +11,7 @@ const PRODUCTOS = [
   'Cámara web HD'
 ];
 
-// Componente de búsqueda
+
 function BarraBusca({ textoBusca, setTextoBusca }) {
   return (
     <input
@@ -23,7 +23,7 @@ function BarraBusca({ textoBusca, setTextoBusca }) {
   );
 }
 
-// Componente de lista
+
 function ListaProductos({ productos, textoBusca }) {
   if (productos.length === 0) {
     return (
@@ -40,7 +40,7 @@ function ListaProductos({ productos, textoBusca }) {
   );
 }
 
-// Componente principal
+
 function App() {
   const [textoBusca, setTextoBusca] = useState('');
 
